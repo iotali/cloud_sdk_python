@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import iotsdk
 from iotsdk.utils import pretty_print_json
+import base64  # 添加base64模块用于消息编码
 
 # 基础配置
 BASE_URL = "http://121.40.253.224:10081"
@@ -106,8 +107,13 @@ def batch_query_device_status_example():
         print(f"查询到 {len(devices_data)} 个设备")
         
         for device in devices_data:
-            device_status = device["deviceStatus"]
-            print(f"设备名称: {device_status['deviceName']}, 状态: {device_status['status']}")
+            # 直接从设备对象获取状态信息，不需要通过deviceStatus字段
+            print(f"设备名称: {device['deviceName']}, 状态: {device['status']}")
+            print(f"设备ID: {device['deviceId']}")
+            print(f"最后在线时间: {device['lastOnlineTime']}")
+            print(f"状态时间戳: {device['timestamp']}")
+            print(f"接入IP: {device.get('asAddress', 'N/A')}")
+            print("-" * 30)
     
     
 def send_rrpc_message_example():
@@ -135,10 +141,44 @@ def send_rrpc_message_example():
             print(f"收到响应: {response['payloadBase64Byte']}")
     
 
+def send_custom_command_example():
+    """自定义指令下发示例"""
+    print("\n===== 自定义指令下发示例 =====")
+    
+    # 创建客户端
+    client = iotsdk.create_client(BASE_URL, TOKEN)
+    
+    # 准备消息内容（JSON字符串）
+    message_content = '{"washingMode": 2, "washingTime": 30}'
+    print(f"原始消息内容: {message_content}")
+    
+    # 将消息内容转换为Base64编码
+    message_bytes = message_content.encode('utf-8')
+    base64_message = base64.b64encode(message_bytes).decode('utf-8')
+    
+    # 构建请求体
+    payload = {
+        "deviceName": "test_device_001",
+        "messageContent": base64_message
+    }
+    
+    # 发送请求到自定义下发指令的API端点
+    endpoint = "/api/v1/device/down/record/add/custom"
+    response = client._make_request(endpoint, payload)
+    
+    # 检查结果
+    if client.check_response(response):
+        print("\n自定义指令下发成功!")
+        print(f"响应数据: {response.get('data', {})}")
+    else:
+        print(f"\n自定义指令下发失败: {response.get('errorMessage', '未知错误')}")
+
+
 if __name__ == "__main__":
     """运行示例"""
     
     # 选择要运行的示例
+    send_custom_command_example()  # 添加新的自定义指令下发示例
     send_rrpc_message_example() 
     register_device_example()
     query_device_detail_example()
