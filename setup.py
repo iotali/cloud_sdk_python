@@ -7,7 +7,7 @@ setup(
     name="iotsdk",
     version="1.0.0",
     author="IoT SDK Team",
-    author_email="your-email@example.com",
+    author_email="iotali@dingtalk.com",
     description="IoT云平台SDK，提供与IoT云平台交互的简便方法",
     long_description=long_description,
     long_description_content_type="text/markdown",
