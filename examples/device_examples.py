@@ -13,9 +13,9 @@ from iotsdk.utils import pretty_print_json
 import base64  # 添加base64模块用于消息编码
 
 # 基础配置
-BASE_URL = "http://121.40.253.224:10081"
-TOKEN = "488820fb-41af-40e5-b2d3-d45a8c576eea"
-PRODUCT_KEY = "kdlxqvXX"
+BASE_URL = "http://iot.iwillcloud.com:10081"
+TOKEN = "1379b85e-1f7e-4d5b-851d-d13757960bb4"
+PRODUCT_KEY = "QrjKUuXE"
 
 
 def register_device_example():
@@ -31,8 +31,8 @@ def register_device_example():
     # 注册设备
     response = device_manager.register_device(
         product_key=PRODUCT_KEY,
-        device_name="test_device_002",
-        nick_name="测试设备002"
+        device_name="32test",
+        nick_name="测试设备003"
     )
     
     # 检查结果
@@ -54,7 +54,7 @@ def query_device_detail_example():
     device_manager = iotsdk.create_device_manager(client)
     
     # 查询设备详情
-    response = device_manager.get_device_detail(device_name="test_device_001")
+    response = device_manager.get_device_detail(device_name="32test")
     
     # 检查结果
     if client.check_response(response):
@@ -76,7 +76,7 @@ def query_device_status_example():
     device_manager = iotsdk.create_device_manager(client)
     
     # 查询设备状态
-    response = device_manager.get_device_status(device_name="test_device_001")
+    response = device_manager.get_device_status(device_name="32test")
     
     # 检查结果
     if client.check_response(response):
@@ -97,7 +97,7 @@ def batch_query_device_status_example():
     device_manager = iotsdk.create_device_manager(client)
     
     # 批量查询设备状态
-    device_names = ["test_device_001", "hbqPvaMbBQ"]
+    device_names = ["48j8EPRYhM", "5Csobg3zCO"]
     response = device_manager.batch_get_device_status(device_name_list=device_names)
     
     # 检查结果
@@ -128,7 +128,7 @@ def send_rrpc_message_example():
     
     # 发送RRPC消息
     response = device_manager.send_rrpc_message(
-        device_name="testcv002",
+        device_name="32test",
         product_key=PRODUCT_KEY,
         message_content="Hello from IoT SDK",
         timeout=5000
@@ -158,7 +158,7 @@ def send_custom_command_example():
     
     # 构建请求体
     payload = {
-        "deviceName": "test_device_001",
+        "deviceName": "5Csobg3zCO",
         "messageContent": base64_message
     }
     

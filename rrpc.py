@@ -2,14 +2,14 @@ import requests
 import json
 import base64
 
-url = "http://121.40.253.224:10081/api/v1/device/rrpc"
+url = "http://iot.iwillcloud.com:10081/api/v1/device/rrpc"
 headers = {
     "Content-Type": "application/json",
-    "token": "488820fb-41af-40e5-b2d3-d45a8c576eea"
+    "token": "1379b85e-1f7e-4d5b-851d-d13757960bb4"
 }
 payload = {
-    "deviceName": "testcv002",
-    "productKey": "kdlxqvXX",
+    "deviceName": "32test",
+    "productKey": "QrjKUuXE",
     "requestBase64Byte": "AQMAAAABhAo=",
     "timeout": 5000
 }
