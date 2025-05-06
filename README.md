@@ -19,6 +19,7 @@ SDK采用模块化设计，主要包含以下组件：
   - 批量设备状态查询
 - 远程控制
   - RRPC消息发送
+  - 自定义指令下发（异步）
 
 ## 安装要求
 
@@ -98,9 +99,14 @@ if client.check_response(response):
 device_names = ["device1", "device2", "device3"]
 response = device_manager.batch_get_device_status(device_name_list=device_names)
 
-# 或者通过设备ID列表查询
-device_ids = ["id1", "id2", "id3"]
-response = device_manager.batch_get_device_status(device_id_list=device_ids)
+# 处理结果
+if client.check_response(response):
+    devices_data = response["data"]
+    for device in devices_data:
+        print(f"设备名称: {device['deviceName']}")
+        print(f"设备状态: {device['status']}")
+        print(f"最后在线时间: {device['lastOnlineTime']}")
+        print("-------------------")
 ```
 
 ### 6. 发送RRPC消息
@@ -113,6 +119,32 @@ response = device_manager.send_rrpc_message(
     message_content="Hello Device",
     timeout=5000  # 超时时间(毫秒)
 )
+```
+
+### 7. 发送自定义指令（异步）
+
+```python
+import base64
+import json
+
+# 向设备发送自定义指令
+# 注意：设备需要已订阅/{productKey}/{deviceName}/user/get主题
+message_content = json.dumps({
+    'command': 'set_mode',
+    'params': {
+        'mode': 2,
+        'duration': 30
+    }
+})
+
+# 构建请求体并发送
+client = iotsdk.create_client("http://your-iot-platform-url", "your-auth-token")
+endpoint = "/api/v1/device/down/record/add/custom"
+payload = {
+    "deviceName": "your-device-name",
+    "messageContent": base64.b64encode(message_content.encode('utf-8')).decode('utf-8')
+}
+response = client._make_request(endpoint, payload)
 ```
 
 ## 示例代码
@@ -167,6 +199,7 @@ client = iotsdk.create_client(
 
 - 使用前请确保已获取正确的认证令牌和产品密钥
 - 所有API调用都会返回完整的响应内容，便于进一步处理和分析
+- 自定义指令下发需要设备已订阅相应的主题
 
 ## 贡献
 
