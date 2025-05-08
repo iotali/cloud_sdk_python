@@ -147,6 +147,7 @@ class DeviceManager:
             
         # 发送请求
         response = self.client._make_request(endpoint, payload)
+        print(response)
         
         # 检查结果并格式化输出
         if self.client.check_response(response):

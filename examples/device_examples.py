@@ -9,21 +9,40 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import iotsdk
+from iotsdk.client import IoTClient  # 直接导入IoTClient类
 from iotsdk.utils import pretty_print_json
 import base64  # 添加base64模块用于消息编码
 
 # 基础配置
-BASE_URL = "http://iot.iwillcloud.com:10081"
-TOKEN = "1379b85e-1f7e-4d5b-851d-d13757960bb4"
-PRODUCT_KEY = "QrjKUuXE"
+BASE_URL = "https://xxx.xxx.com"
+
+PRODUCT_KEY = "NrateJMx"
+# 应用凭证配置
+APP_ID = "app-680***"
+APP_SECRET = "6808aa30614c4c9f3238***"
 
 
-def register_device_example():
+def initialize_client_with_credentials_example():
+    """使用应用凭证初始化客户端示例"""
+    print("\n===== 使用应用凭证初始化客户端示例 =====")
+    
+    # 使用应用凭证初始化客户端
+    client = IoTClient.from_credentials(  # 使用直接导入的IoTClient类
+        base_url=BASE_URL,
+        app_id=APP_ID,
+        app_secret=APP_SECRET
+    )
+    
+    print("\n客户端初始化成功!")
+    print(f"Base URL: {client.base_url}")
+    print(f"Token: {client.token[:10]}...") # 只显示token的前10个字符
+    
+    return client
+
+
+def register_device_example(client):
     """设备注册示例"""
     print("\n===== 设备注册示例 =====")
-    
-    # 创建客户端
-    client = iotsdk.create_client(BASE_URL, TOKEN)
     
     # 创建设备管理器
     device_manager = iotsdk.create_device_manager(client)
@@ -43,12 +62,9 @@ def register_device_example():
         print(f"设备密钥: {device_info['deviceSecret']}")
     
     
-def query_device_detail_example():
+def query_device_detail_example(client):
     """设备详情查询示例"""
     print("\n===== 设备详情查询示例 =====")
-    
-    # 创建客户端
-    client = iotsdk.create_client(BASE_URL, TOKEN)
     
     # 创建设备管理器
     device_manager = iotsdk.create_device_manager(client)
@@ -65,12 +81,9 @@ def query_device_detail_example():
         print(f"设备状态: {device_info['status']}")
     
     
-def query_device_status_example():
+def query_device_status_example(client):
     """设备状态查询示例"""
     print("\n===== 设备状态查询示例 =====")
-    
-    # 创建客户端
-    client = iotsdk.create_client(BASE_URL, TOKEN)
     
     # 创建设备管理器
     device_manager = iotsdk.create_device_manager(client)
@@ -86,12 +99,9 @@ def query_device_status_example():
         print(f"状态时间戳: {status_data['timestamp']}")
     
     
-def batch_query_device_status_example():
+def batch_query_device_status_example(client):
     """批量设备状态查询示例"""
     print("\n===== 批量设备状态查询示例 =====")
-    
-    # 创建客户端
-    client = iotsdk.create_client(BASE_URL, TOKEN)
     
     # 创建设备管理器
     device_manager = iotsdk.create_device_manager(client)
@@ -116,12 +126,9 @@ def batch_query_device_status_example():
             print("-" * 30)
     
     
-def send_rrpc_message_example():
+def send_rrpc_message_example(client):
     """发送RRPC消息示例"""
     print("\n===== 发送RRPC消息示例 =====")
-    
-    # 创建客户端
-    client = iotsdk.create_client(BASE_URL, TOKEN)
     
     # 创建设备管理器
     device_manager = iotsdk.create_device_manager(client)
@@ -141,12 +148,9 @@ def send_rrpc_message_example():
             print(f"收到响应: {response['payloadBase64Byte']}")
     
 
-def send_custom_command_example():
+def send_custom_command_example(client):
     """自定义指令下发示例"""
     print("\n===== 自定义指令下发示例 =====")
-    
-    # 创建客户端
-    client = iotsdk.create_client(BASE_URL, TOKEN)
     
     # 准备消息内容（JSON字符串）
     message_content = '{"washingMode": 2, "washingTime": 30}'
@@ -158,7 +162,7 @@ def send_custom_command_example():
     
     # 构建请求体
     payload = {
-        "deviceName": "5Csobg3zCO",
+        "deviceName": "32test",
         "messageContent": base64_message
     }
     
@@ -174,14 +178,46 @@ def send_custom_command_example():
         print(f"\n自定义指令下发失败: {response.get('errorMessage', '未知错误')}")
 
 
+def test_client_functionality(client):
+    """测试客户端基本功能"""
+    print("\n===== 测试客户端功能 =====")
+    
+    # 创建设备管理器
+    device_manager = iotsdk.create_device_manager(client)
+    
+    # 查询设备状态
+    response = device_manager.get_device_status(device_name="32test")
+    
+    # 检查结果
+    if client.check_response(response):
+        print("\n使用客户端测试成功!")
+        status_data = response.get("data", {})
+        print(f"设备状态: {status_data.get('status', 'N/A')}")
+    else:
+        print("\n操作失败!")
+
+
 if __name__ == "__main__":
     """运行示例"""
     
-    # 选择要运行的示例
-    send_custom_command_example()  # 添加新的自定义指令下发示例
-    send_rrpc_message_example() 
-    register_device_example()
-    query_device_detail_example()
-    query_device_status_example()
-    batch_query_device_status_example()
+    # 首先创建一个全局客户端实例，后续所有示例共用此实例
+    print("\n===== 创建SDK客户端 =====")
+    print("使用应用凭证自动获取token...")
+    client = initialize_client_with_credentials_example()
+    register_device_example(client)
+    query_device_detail_example(client)
+    
+    # 测试客户端基本功能
+    test_client_functionality(client)
+    
+    # 运行各个功能示例，复用同一个客户端实例
+    send_custom_command_example(client)
+    send_rrpc_message_example(client)
+    
+    
+    query_device_status_example(client)
+    batch_query_device_status_example(client)
+    
+    print("\n===== 示例运行完成 =====")
+    print("一个客户端实例被用于执行所有API调用")
     

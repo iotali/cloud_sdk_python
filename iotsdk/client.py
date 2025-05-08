@@ -36,6 +36,64 @@ class IoTClient:
             raise ValueError("无效的token")
             
         self.logger.info(f"IoT客户端已初始化: {self.base_url}")
+    
+    @classmethod
+    def from_credentials(cls, base_url: str, app_id: str, app_secret: str, logger=None):
+        """
+        通过应用凭证初始化IoT客户端
+
+        Args:
+            base_url: API基础URL
+            app_id: 应用ID
+            app_secret: 应用密钥
+            logger: 可选的日志记录器
+
+        Returns:
+            IoTClient: 初始化后的客户端实例
+        """
+        logger = logger or logging.getLogger('iotsdk')
+        logger.info("通过应用凭证初始化IoT客户端")
+        
+        # 构建身份验证URL
+        auth_url = f"{base_url.rstrip('/')}/api/v1/oauth/auth"
+        
+        # 准备认证请求
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "appId": app_id,
+            "appSecret": app_secret
+        }
+        
+        logger.debug(f"发送认证请求: POST {auth_url}")
+        logger.debug(f"认证请求体: {payload}")
+        
+        try:
+            # 发送认证请求
+            response = requests.post(auth_url, headers=headers, data=json.dumps(payload))
+            response.raise_for_status()
+            
+            # 解析响应
+            result = response.json()
+            logger.debug(f"收到认证响应: {result}")
+            
+            # 检查响应是否成功
+            if not result.get("success") or result.get("code") != 200:
+                error_msg = result.get("errorMessage", "未知错误")
+                logger.error(f"认证失败: {error_msg}")
+                raise ValueError(f"认证失败: {error_msg}")
+            
+            # 获取token并创建客户端实例
+            token = result["data"]
+            logger.info("认证成功，已获取token")
+            
+            return cls(base_url=base_url, token=token, logger=logger)
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"认证请求错误: {e}")
+            raise
+        except json.JSONDecodeError as e:
+            logger.error(f"认证响应解析错误: {e}")
+            raise ValueError(f"无法解析认证响应为JSON: {e}")
         
     def _make_request(self, 
                      endpoint: str, 
