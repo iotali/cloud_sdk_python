@@ -12,6 +12,9 @@ SDK采用模块化设计，主要包含以下组件：
 
 ## 功能特性
 
+- 认证管理
+  - 通过token直接认证
+  - **新增：** 通过应用凭证(appId/appSecret)自动获取token
 - 设备管理
   - 设备注册
   - 设备详情查询
@@ -34,13 +37,31 @@ pip install -r requirements.txt
 
 ### 1. 创建客户端和设备管理器
 
+#### 方式一：使用token创建客户端（传统方式）
+
 ```python
 import iotsdk
 
 # 创建IoT客户端
 client = iotsdk.create_client(
-    base_url="http://your-iot-platform-url",
+    base_url="https://your-iot-platform-url",
     token="your-auth-token"
+)
+
+# 创建设备管理器
+device_manager = iotsdk.create_device_manager(client)
+```
+
+#### 方式二：使用应用凭证创建客户端（推荐方式）
+
+```python
+from iotsdk.client import IoTClient
+
+# 使用应用凭证自动获取token并创建客户端
+client = IoTClient.from_credentials(
+    base_url="https://your-iot-platform-url",
+    app_id="your-app-id",
+    app_secret="your-app-secret"
 )
 
 # 创建设备管理器
@@ -119,6 +140,13 @@ response = device_manager.send_rrpc_message(
     message_content="Hello Device",
     timeout=5000  # 超时时间(毫秒)
 )
+
+# 处理响应
+if client.check_response(response):
+    if "payloadBase64Byte" in response:
+        import base64
+        decoded_response = base64.b64decode(response["payloadBase64Byte"]).decode('utf-8')
+        print(f"设备响应: {decoded_response}")
 ```
 
 ### 7. 发送自定义指令（异步）
@@ -128,7 +156,6 @@ import base64
 import json
 
 # 向设备发送自定义指令
-# 注意：设备需要已订阅/{productKey}/{deviceName}/user/get主题
 message_content = json.dumps({
     'command': 'set_mode',
     'params': {
@@ -137,19 +164,67 @@ message_content = json.dumps({
     }
 })
 
-# 构建请求体并发送
-client = iotsdk.create_client("http://your-iot-platform-url", "your-auth-token")
+# 使用设备管理器发送自定义指令
 endpoint = "/api/v1/device/down/record/add/custom"
 payload = {
     "deviceName": "your-device-name",
     "messageContent": base64.b64encode(message_content.encode('utf-8')).decode('utf-8')
 }
 response = client._make_request(endpoint, payload)
+
+if client.check_response(response):
+    print("自定义指令下发成功!")
+```
+
+## 完整示例
+
+### 使用应用凭证并重用客户端
+
+```python
+from iotsdk.client import IoTClient
+import iotsdk
+import json
+
+# 配置参数
+base_url = 'https://your-iot-platform-url'
+app_id = 'your-app-id'
+app_secret = 'your-app-secret'
+product_key = 'your-product-key'
+
+try:
+    # 初始化客户端（仅一次）
+    client = IoTClient.from_credentials(base_url, app_id, app_secret)
+    print(f"客户端初始化成功，Token: {client.token[:10]}...")
+    
+    # 创建设备管理器
+    device_manager = iotsdk.create_device_manager(client)
+    
+    # 执行多个操作，复用同一个客户端
+    device_name = "test-device-1"
+    
+    # 查询设备状态
+    status_response = device_manager.get_device_status(device_name=device_name)
+    if client.check_response(status_response):
+        status = status_response.get("data", {}).get("status", "unknown")
+        print(f"设备状态: {status}")
+    
+    # 发送指令
+    command_json = json.dumps({'command': 'refresh'})
+    message_response = device_manager.send_rrpc_message(
+        device_name=device_name,
+        product_key=product_key,
+        message_content=command_json
+    )
+    
+    # 其他操作...
+    
+except Exception as e:
+    print(f"错误: {e}")
 ```
 
 ## 示例代码
 
-参见 `examples` 目录下的示例文件，展示了SDK的具体用法。
+参见 `examples` 目录下的示例文件，特别是 `device_examples.py`，展示了如何使用应用凭证初始化客户端并执行各种设备操作。
 
 ## 异常处理
 
@@ -187,17 +262,27 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# 创建带自定义日志的客户端
+# 创建带自定义日志的客户端（使用token）
 client = iotsdk.create_client(
-    base_url="http://your-iot-platform-url",
+    base_url="https://your-iot-platform-url",
     token="your-auth-token",
+    logger=logger
+)
+
+# 或使用应用凭证创建
+client = IoTClient.from_credentials(
+    base_url="https://your-iot-platform-url",
+    app_id="your-app-id",
+    app_secret="your-app-secret",
     logger=logger
 )
 ```
 
 ## 注意事项
 
-- 使用前请确保已获取正确的认证令牌和产品密钥
+- **认证方式**：推荐使用应用凭证方式自动获取token
+- **客户端复用**：创建一次客户端实例后在应用程序中复用，避免重复获取token
+- 使用前请确保已获取正确的认证令牌/应用凭证和产品密钥
 - 所有API调用都会返回完整的响应内容，便于进一步处理和分析
 - 自定义指令下发需要设备已订阅相应的主题
 
